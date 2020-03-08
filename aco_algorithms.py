@@ -1,7 +1,9 @@
 import cvrpcases as cvrp
 import random
+import matplotlib.pyplot as plt
+import networkx as nx
 
-random.seed(420)  # inicjalizacja generatora liczb pseudolosowych
+
 
 
 class Ant:
@@ -13,7 +15,7 @@ class Ant:
 
 
 class SimpleAco:
-    def __init__(self, case, ants_count, max_iterations, alpha, beta, evaporation_rate, pheromone_amount):
+    def __init__(self, case, ants_count, max_iterations, alpha, beta, evaporation_rate, pheromone_amount, seed):
         self.case = case  # instancja problemu
         self.ants_count = ants_count  # liczba mrówek
         # liczba iteracji po jakiej zakończyć obliczenia
@@ -25,6 +27,7 @@ class SimpleAco:
         self.pheromone_amount = pheromone_amount
         self.solution = None
         self.solution_path = None
+        random.seed(seed) # inicjalizacja generatora liczb pseudolosowych
 
     def get_random_node(self):
         """Zwraca losowy indeks wierzchołka różny od indeksu bazy
@@ -52,12 +55,14 @@ class SimpleAco:
         p = {}
         for node in nodes:
             edge = self.case.graph[v][node]
-            sum += ((1/edge['weight'])**self.alpha) * \
-                (edge['pheromone']**self.beta)
+            if edge['weight']>0:
+                sum += ((1/edge['weight'])**self.alpha) * \
+                    (edge['pheromone']**self.beta)
         for node in nodes:
             edge = self.case.graph[v][node]
             # TODO co jesli caly feromon odparuje?
-            p[node] = (((1/edge['weight'])**self.alpha) *
+            if edge['weight']>0:
+                p[node] = (((1/edge['weight'])**self.alpha) *
                        (edge['pheromone']**self.beta)) / sum
         # z posortowanych według wartości p wierzchołków, wybierz pierwszy, dla którego mrówka może spełnić zapotrzebowanie
         for node, _ in sorted(p.items(), key=lambda item: item[1], reverse=True):
@@ -69,6 +74,8 @@ class SimpleAco:
 
     def compute(self,log_level=0):
         for i in range(0, self.max_iterations):
+            if log_level > 2:
+                self.print_pheromones()
             ants = []
             for k in range(0, self.ants_count):
                 # zainicjowanie w pełni załadowanej mrówki w bazie
@@ -78,6 +85,9 @@ class SimpleAco:
                 nodes.remove(self.case.depot)
                 # losowy wybór pierwszgo wierzchołka
                 idx = random.randint(0, len(nodes)-1)
+                if log_level > 1:
+                    print("first vertex index for " +str(k)+" Ant = " + str(nodes[idx]))
+
                 v = nodes[idx]
                 edge = self.case.graph[self.case.depot][v]
                 ant.weight_sum += edge['weight']
@@ -106,7 +116,7 @@ class SimpleAco:
                 ant.path.append(self.case.depot)
                 ants.append(ant)
                 if log_level > 1:
-                    print(" ant " + str(k) + ": " + str(ant.path))
+                    print(" ant " + str(k) + ": " + str(ant.path) + " summary cost=" + str(ant.weight_sum))
                 # zapisz rozwiązanie jeśli jest lepsze od aktualnego
                 if self.solution is None or ant.weight_sum < self.solution:
                     self.solution = ant.weight_sum
@@ -123,3 +133,87 @@ class SimpleAco:
                     v1 = v2
             if log_level > 0:
                 print("i=" + str(i) + ": " + str(self.solution))
+
+    def draw(self):
+        elarge = [(u, v) for (u, v, d) in self.case.graph.edges(data=True)]
+        pos = nx.spring_layout(self.case.graph)  # positions for all nodes
+        nx.draw_networkx_nodes(self.case.graph, pos, node_size=700)
+        nx.draw_networkx_edges(self.case.graph, pos, edgelist=elarge,width=1)
+        edge_labels=dict([((u,v,),round(d['weight'],2))
+                 for u,v,d in self.case.graph.edges(data=True)])
+        nx.draw_networkx_labels(self.case.graph, pos, font_size=20, font_family='sans-serif')
+        nx.draw_networkx_edge_labels(self.case.graph,pos,edge_labels=edge_labels)
+        plt.axis('off')
+        plt.show()
+
+    def print_pheromones(self):
+        for v1, v2 in self.case.graph.edges:
+            print("v1= ", str(v1) + " v2= " + str(v2) + " pheromone=" + str(self.case.graph[v1][v2]['pheromone']))
+
+
+class Greedy:
+    def __init__(self, case):
+        self.case = case  # instancja problemu
+        self.solution = None
+        self.solution_path = None
+
+    def get_random_node(self):
+        """Zwraca losowy indeks wierzchołka różny od indeksu bazy
+
+        Returns:
+            int -- indeks wybranego wierzchołka
+        """
+        v = random.randint(1, self.case.graph.number_of_nodes())
+        while v == self.case.depot:
+            v = random.randint(1, self.case.graph.number_of_nodes())
+        return v
+
+    def compute(self,log_level=0):
+        Vehicles = []
+        for dd in range(self.case.graph.number_of_nodes()-1):
+            v = Vehicle(self.case.capacity, self.case.depot)
+            Vehicles.append(v)
+
+        
+        nodes = list(self.case.graph.nodes())
+        nodes.remove(self.case.depot)
+        
+
+        while len(nodes) > 0:
+
+            min = float('inf')
+            vmin = -1
+            nmin = -1
+
+            for v in Vehicles:
+                for n in nodes:
+                    if(v.capacity>= self.case.demands[n] and self.case.graph[v.node][n]['weight']<min): 
+                        min = self.case.graph[v.node][n]['weight']
+                        vmin = v
+                        nmin = n
+
+            vmin.weight_sum += self.case.graph[vmin.node][nmin]['weight']
+            vmin.path.append(nmin)
+            vmin.capacity-=self.case.demands[nmin]
+            vmin.node = nmin
+            nodes.remove(nmin)
+        
+        sum = 0
+
+        for v in Vehicles:
+            if(v.node!=self.case.depot):
+                v.weight_sum += self.case.graph[v.node][self.case.depot]['weight']
+                v.node = self.case.depot
+                v.path.append(self.case.depot)
+            sum += v.weight_sum
+            print("path = " + str(v.path) + " cost = " + str(v.weight_sum))
+
+        print("result = " + str(sum))
+
+
+class Vehicle:
+    def __init__(self, capacity, node):
+        self.node = node
+        self.capacity = capacity
+        self.weight_sum = 0  
+        self.path = [node]  # lista kolejnych odwiedzanych wierzchołków

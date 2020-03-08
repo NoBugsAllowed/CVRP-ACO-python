@@ -70,17 +70,18 @@ def load_case(path):
                 capacity = int(line[line.find(":")+2:])
             elif line.startswith("EDGE_WEIGHT_TYPE :"):
                 weight_type = line[line.find(":")+2:]
-                if weight_type != "EUC_2D":
+                if not weight_type.endswith("EUC_2D"):
                     raise Exception("Not supported edge weight type")
             elif line.startswith("COMMENT :"):
                 comment = line[line.find(":")+2:]
             elif line.startswith("NAME :"):
                 name = line[line.find(":")+2:]
-
+ 
     for i, v1 in enumerate(nodes):
         for v2 in nodes[i+1:]:
             dist = math.sqrt((v1.x-v2.x)**2+(v1.y-v2.y)**2)
             # TODO jaka wartosc feromonu na poczatku?
-            graph.add_edge(v1.id, v2.id, weight=dist, pheromone=1)
+            graph.add_edge(v1.id, v2.id, weight=dist, pheromone=0.000001)
+            #print(str(v1.id) + " " + str(v2.id)+ " " + str(dist))
 
     return CVRPCase(name, comment, graph, capacity, depot)
