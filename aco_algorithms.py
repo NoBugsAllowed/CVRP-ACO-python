@@ -2,7 +2,7 @@ import cvrpcases as cvrp
 import random
 import matplotlib.pyplot as plt
 import networkx as nx
-
+import numpy as np
 
 
 
@@ -59,18 +59,33 @@ class SimpleAco:
                 sum += ((1/edge['weight'])**self.alpha) * \
                     (edge['pheromone']**self.beta)
         for node in nodes:
+            demand = self.case.demands[node]
+            if demand > capacity:
+                continue
             edge = self.case.graph[v][node]
             # TODO co jesli caly feromon odparuje?
             if edge['weight']>0:
                 p[node] = (((1/edge['weight'])**self.alpha) *
                        (edge['pheromone']**self.beta)) / sum
         # z posortowanych według wartości p wierzchołków, wybierz pierwszy, dla którego mrówka może spełnić zapotrzebowanie
-        for node, _ in sorted(p.items(), key=lambda item: item[1], reverse=True):
-            demand = self.case.demands[node]
-            if demand <= capacity:
-                return node, self.case.graph[v][node]['weight'], demand
-        # jeśli nie można spełnić zapotrzebowania żadnego wierzchołka, mrówka wraca do bazy
-        return self.case.depot, self.case.graph[v][self.case.depot]['weight'], capacity
+        # for node, _ in sorted(p.items(), key=lambda item: item[1], reverse=True):
+        #     demand = self.case.demands[node]
+        #     if demand <= capacity:
+        #         return node, self.case.graph[v][node]['weight'], demand
+        # # jeśli nie można spełnić zapotrzebowania żadnego wierzchołka, mrówka wraca do bazy
+        # return self.case.depot, self.case.graph[v][self.case.depot]['weight'], capacity
+        if len(p)==0:
+            return self.case.depot, self.case.graph[v][self.case.depot]['weight'], capacity
+        # wylosuj następny wierzchołek na podstawie rozkładu p
+        
+        pvalues = list(p.values())
+        sump = 0
+        for x in pvalues:
+            sump = sump + x
+        pvalues = [x/sump for x in pvalues]
+
+        next = np.random.choice(list(p.keys()), p=pvalues)
+        return next, self.case.graph[v][next]['weight'], demand
 
     def compute(self,log_level=0):
         for i in range(0, self.max_iterations):
