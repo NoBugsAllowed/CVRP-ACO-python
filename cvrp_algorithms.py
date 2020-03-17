@@ -30,6 +30,7 @@ class SimpleAco:
         self.solution = None  # suma wag krawędzi najlepszego rozwiązania
         self.solution_path = None  # lista wierzchołków najlepszego rozwiązania
         random.seed(seed)  # inicjalizacja generatora liczb pseudolosowych
+        np.random.seed(seed)
 
     def get_p_distribution(self, v, capacity, nodes):
         """Oblicza rozkład prawdopodobieństwa wyboru kolejnego wierzchołka
