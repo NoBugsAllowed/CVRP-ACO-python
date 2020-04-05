@@ -2,6 +2,7 @@ import networkx as nx
 #import matplotlib.pyplot as plt
 import math
 
+INITIAL_PHEROMONE_AMOUNT = 0
 
 class CVRPCase:
     def __init__(self, name, comment, graph, capacity, depot):
@@ -78,10 +79,11 @@ def load_case(path):
                 name = line[line.find(":")+2:]
  
     for i, v1 in enumerate(nodes):
+        global INITIAL_PHEROMONE_AMOUNT
         for v2 in nodes[i+1:]:
             dist = math.sqrt((v1.x-v2.x)**2+(v1.y-v2.y)**2)
             # TODO jaka wartosc feromonu na poczatku?
-            graph.add_edge(v1.id, v2.id, weight=dist, pheromone=0.000001)
+            graph.add_edge(v1.id, v2.id, weight=dist, pheromone=INITIAL_PHEROMONE_AMOUNT)
             #print(str(v1.id) + " " + str(v2.id)+ " " + str(dist))
 
     return CVRPCase(name, comment, graph, capacity, depot)
