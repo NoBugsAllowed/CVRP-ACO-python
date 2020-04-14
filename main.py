@@ -5,7 +5,7 @@ case_path = r'datasets\A\A-n32-k5.vrp'
 case = cvrp.load_case(case_path)
 
 # algorithm = Greedy(case)
-algorithm = SimpleAco(case, ants_count=50, max_iterations=200, alpha=2, beta=5, evaporation_rate=0.6, pheromone_amount=20, seed = 78)
+algorithm = SimpleAco(case, ants_count=1000, max_iterations=1, alpha=2, beta=5, evaporation_rate=0.6, pheromone_amount=20, seed = 78)
 # algorithm = AcoSigmaBestAnts(case, ants_count=50, max_iterations=200, alpha=2, beta=5, evaporation_rate=0.6, pheromone_amount=20, sigma=10, seed = 78)
 # algorithm = AcoImprovedPheromoneUpdate(case, ants_count=50, max_iterations=200, alpha=2, beta=5, evaporation_rate=0.6, pheromone_amount=20, sigma=10, seed = 78)
 # algorithm = Aco2opt(case, ants_count=50, max_iterations=200, alpha=2, beta=5, evaporation_rate=0.6, pheromone_amount=20, seed = 78)
